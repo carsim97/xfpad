@@ -119,7 +119,6 @@ def _plot_unseen(z: np.ndarray,
                  bf_color, unseen_color) -> None:
     """Render one figure per unseen class. Bona fide samples (label 0)
     are overlaid on every figure if present."""
-    bf_mask = labels == 0
     unseen_classes = [int(c) for c in np.unique(labels) if c != 0]
 
     for c in unseen_classes:
@@ -132,11 +131,6 @@ def _plot_unseen(z: np.ndarray,
 
         fig, ax = plt.subplots(figsize=figsize)
 
-        if bf_mask.any():
-            ax.scatter(z[bf_mask, 0], z[bf_mask, 1],
-                       color=bf_color, alpha=alpha,
-                       label=label_names.get(0, "bona fide"))
-
         cls_mask = labels == c
         ax.scatter(z[cls_mask, 0], z[cls_mask, 1],
                    color=unseen_color, alpha=alpha, label=cls_name)
@@ -144,5 +138,4 @@ def _plot_unseen(z: np.ndarray,
         if T is not None:
             _draw_threshold_circle(ax, T)
         _set_axes(ax, axes_lim)
-        ax.legend(loc="best", framealpha=0.9)
         _save(fig, out, dpi)
