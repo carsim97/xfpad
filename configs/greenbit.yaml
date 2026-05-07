@@ -3,12 +3,6 @@
 
 scanner: greenbit
 
-# Plot frame for cross-figure alignment (matches Section V of the paper).
-plot:
-  axes_lim:
-    xlim: [-7.43,  9.43]
-    ylim: [-10.67, 11.82]
-
 # Label mapping for the TRAINING split.
 #   - Each rule has a 'match' (list of substrings, all required in the path)
 #     and a 'label' (integer; bona fide is 0, PAIs are contiguous 1..K).
