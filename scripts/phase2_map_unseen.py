@@ -191,12 +191,12 @@ def _run_one_seed(train_cfg: Config,
     if do_plot:
         plot_root = ensure_dir(outputs_root / "plots" / train_cfg.scanner / f"seed{seed}")
         T = train_cfg.loss.rho_bf ** 2
-        plot_latent_space(
+        derived_lim = plot_latent_space(
             z_train, train_labels_arr, train_names_d,
             plot_root / "training.png",
             mode="training",
             T=T,
-            axes_lim=axes_lim(train_cfg),
+            axes_lim=None,
             figsize=tuple(train_cfg.plot.figsize),
             dpi=train_cfg.plot.dpi,
             alpha=train_cfg.plot.alpha,
@@ -208,7 +208,7 @@ def _run_one_seed(train_cfg: Config,
             plot_root / "unseen.png",
             mode="unseen",
             T=T,
-            axes_lim=axes_lim(test_cfg),
+            axes_lim=derived_lim,
             figsize=tuple(train_cfg.plot.figsize),
             dpi=train_cfg.plot.dpi,
             alpha=train_cfg.plot.alpha,
