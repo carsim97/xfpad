@@ -1,0 +1,42 @@
+# Dermalog LF10 scanner configuration.
+# Inherits from configs/base.yaml.
+
+scanner: dermalog
+
+# Plot frame for cross-figure alignment.
+plot:
+  axes_lim:
+    xlim: [-9.21, 18.64]
+    ylim: [-9.96, 16.70]
+
+# Label mapping for the TRAINING split.
+training_labels:
+  mapping:
+    - { match: ["Live"],   label: 0 }
+    - { match: ["LIVE"],   label: 0 }
+    - { match: ["Latex"],  label: 1 }
+    - { match: ["Fast"],   label: 2 }
+    - { match: ["RPRO10"], label: 3 }
+    - { match: ["LATEX"],  label: 4 }
+  names:
+    0: "Bona Fide"
+    1: "Latex"
+    2: "RProFast"
+    3: "RPro10"
+    4: "Latex V2"
+
+# Label mapping for the unseen-PAI VALIDATION split (LivDet 2021).
+unseen_labels:
+  mapping:
+    - { match: ["Live"],                 label: 0 }
+    - { match: ["LIVE"],                 label: 0 }
+    - { match: ["GLS",  "Consensual"],   label: 1 }
+    - { match: ["Fast", "Consensual"],   label: 2 }
+    - { match: ["GLS",  "ScreenSpoof"],  label: 3 }
+    - { match: ["Fast", "ScreenSpoof"],  label: 4 }
+  names:
+    0: "Bona Fide"
+    1: "GLS20 Consensual"
+    2: "RFast30 Consensual"
+    3: "GLS20 ScreenSpoof"
+    4: "RFast30 ScreenSpoof"

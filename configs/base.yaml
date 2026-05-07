@@ -1,0 +1,64 @@
+# X-FPAD shared hyperparameters.
+# Per-scanner overrides live in greenbit.yaml / dermalog.yaml and are deep-merged
+# on top of this file via xfpad.config.load_config(...).
+
+seed: 0
+device: auto              # 'auto' | 'cuda' | 'cpu'
+
+paths:
+  splits_dir:   data/splits
+  features_dir: data/features
+  checkpoints:  checkpoints
+  outputs:      outputs
+
+# ---------------------------------------------------------------------------
+# Phase 1 - Manifold construction
+# ---------------------------------------------------------------------------
+backbone:                 # MobileNet-v2 feature extractor f_phi
+  in_channels: 1
+  num_epochs:  200
+  batch_size:  16
+  lr:          0.001
+  weight_decay: 1.0e-5
+  num_workers: 4
+
+geometric:                # Geometric encoder g_psi (MLP 1280 -> 2)
+  num_epochs:  200
+  batch_size:  128
+  lr:          0.001
+  weight_decay: 1.0e-5
+  dropout:     0.2
+  num_workers: 4
+
+# Compound loss (Section III-C of the paper)
+loss:
+  rho_bf:      1.0        # bona fide radius
+  delta_rho:   1.0        # radial margin (rho_pa = rho_bf + delta_rho)
+  gamma_min:   1.0        # log-scaling floor
+  gamma_max:   1000.0     # log-scaling ceiling
+
+# Soft attribution (Phase 2, Appendix A-A)
+attribution:
+  tau: 5.0                # inverse temperature
+
+# ---------------------------------------------------------------------------
+# Phase 3 - Audited PAD systems
+# ---------------------------------------------------------------------------
+pad_detector:
+  num_epochs:  50
+  batch_size:  16
+  lr:          0.001
+  weight_decay: 1.0e-5
+  num_workers: 4
+  threshold:   0.5
+  num_runs:    10
+
+# ---------------------------------------------------------------------------
+# Plot styling
+# ---------------------------------------------------------------------------
+plot:
+  figsize:       [8, 8]
+  dpi:           200
+  alpha:         0.6
+  bf_color:      "#3a6fb5"
+  unseen_color:  "#c0392b"
