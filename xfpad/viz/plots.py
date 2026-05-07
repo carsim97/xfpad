@@ -81,11 +81,12 @@ def plot_latent_space(z: np.ndarray,
     save_path = Path(save_path)
 
     if mode == "training":
-        _plot_training(z, labels, label_names, save_path, T,
-                       axes_lim, figsize, dpi, alpha)
+        return _plot_training(z, labels, label_names, save_path, T,
+                              axes_lim, figsize, dpi, alpha)
     elif mode == "unseen":
         _plot_unseen(z, labels, label_names, save_path, T,
                      axes_lim, figsize, dpi, alpha, bf_color, unseen_color)
+        return None
     else:
         raise ValueError(f"mode must be 'training' or 'unseen', got '{mode}'.")
 
@@ -106,7 +107,9 @@ def _plot_training(z: np.ndarray,
         _draw_threshold_circle(ax, T)
     _set_axes(ax, axes_lim)
     ax.legend(loc="best", framealpha=0.9)
+    lims = (ax.get_xlim(), ax.get_ylim())
     _save(fig, save_path, dpi)
+    return lims
 
 
 def _plot_unseen(z: np.ndarray,
