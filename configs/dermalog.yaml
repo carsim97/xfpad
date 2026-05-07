@@ -3,12 +3,6 @@
 
 scanner: dermalog
 
-# Plot frame for cross-figure alignment.
-plot:
-  axes_lim:
-    xlim: [-9.21, 18.64]
-    ylim: [-9.96, 16.70]
-
 # Label mapping for the TRAINING split.
 training_labels:
   mapping:
