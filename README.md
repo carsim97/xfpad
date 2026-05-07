@@ -51,7 +51,7 @@ xfpad-code/
 Tested with Python 3.9.
 
 ```bash
-git clone https://github.com/<your-org>/xfpad.git
+git clone https://github.com/carsim97/xfpad.git
 cd xfpad
 python -m venv .venv && source .venv/bin/activate
 pip install -U pip
