@@ -91,6 +91,24 @@ Then update the split files to point to the extracted patches.
 
 ---
 
+## Data availability
+
+The `data/splits/` directory is **not** included in this repository. The split
+files only list image paths, but they index the **LivDet 2019 / 2021 / 2023**
+datasets, which are distributed by the LivDet organizers under their own access
+terms and cannot be redistributed here. To reproduce the experiments, obtain the
+LivDet data from the official sources and create one plain-text file per scanner
+and split:
+
+    data/splits/<scanner>_train.txt   # known (training) PAIs
+    data/splits/<scanner>_test.txt    # unseen (validation) PAIs
+
+Each line is the path to one image. Paths are mapped to integer labels via the
+substring rules in `configs/<scanner>.yaml` (`0` = bona fide, `1..K` = known
+PAIs in the train split; `0` plus `1..U` = unseen PAIs in the test split).
+
+---
+
 ## Reproducing the paper
 
 The full pipeline is split into three numbered phases that mirror Section IV-A of the paper. All commands assume you are at the repo root with the virtual environment active. Replace `greenbit` with `dermalog` to reproduce the Dermalog results.
@@ -235,21 +253,24 @@ See `scripts/phase2_map_unseen.py:_project` for a worked example of running both
 
 ## Paper artefact map
 
-| Paper element | Source |
-|---|---|
-| Eq. (1) `L_conc` | `xfpad/losses/concentric.py` |
-| Eq. (2)–(3) `L_cos` | `xfpad/losses/angular.py` |
-| Eq. (4) `S(x)` log-scaling | `xfpad/losses/angular.py: make_log_scale` |
-| Eq. (5) `p_{u,k}` attribution | `xfpad/metrics/attribution.py: analyze_unseen_pais` |
-| Eq. (6)–(8) BFO / RCI / ACS | `xfpad/metrics/geometric.py: calculate_metrics` |
-| Fig. 1 pipeline | `scripts/phase1_train.py` |
-| Fig. 2 encoder architecture | `xfpad/models/geometric_encoder.py` |
-| Fig. 4 / Fig. 5 manifolds | `scripts/phase2_map_unseen.py --plot` |
-| Fig. 6 Δρ ablation | re-run phase 1.3 with overridden `loss.delta_rho` |
-| Table I / II datasets | `data/splits/*.txt` |
-| Table III Phase 2 anchors | `phase2_map_unseen.py --num-runs 10 --save-json` |
-| Table IV Phase 3 ablation | `phase3_audit_pad.py --action both --num-runs 10` |
-| Table V Δρ metrics | `xfpad/metrics/geometric.py` invoked via Phase 2 |
+| Paper element                                | Source                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| Eq. (1) `L_conc`                             | `xfpad/losses/concentric.py`                        |
+| Eq. (2) prototype angles `φ_k` / Eq. (3) `L_cos` | `xfpad/losses/angular.py`                       |
+| Eq. (4) `S(x)` log-scaling                   | `xfpad/losses/angular.py: make_log_scale`           |
+| Eq. (S1) `p_{u,k}` attribution (suppl.)      | `xfpad/metrics/attribution.py: analyze_unseen_pais` |
+| Eq. (S2)–(S4) BFO / RCI / ACS (suppl.)       | `xfpad/metrics/geometric.py: calculate_metrics`     |
+| Fig. 1 pipeline                              | `scripts/phase1_train.py`                           |
+| Fig. 2 encoder architecture                  | `xfpad/models/geometric_encoder.py`                 |
+| Fig. 3 conceptual contrast                   | conceptual illustration (no script)                 |
+| Fig. 4 / Fig. 5 manifolds                    | `scripts/phase2_map_unseen.py --plot`               |
+| Fig. S1 Δρ latent spaces (suppl.)            | re-run Phase 1.3 with overridden `loss.delta_rho`   |
+| Table I / II datasets                        | `data/splits/*.txt`                                 |
+| Table III Phase 2 anchors                    | `phase2_map_unseen.py --num-runs 10 --save-json`    |
+| Table IV baseline APCER                      | `phase3_audit_pad.py --action both --num-runs 10` (no `--ablate`) |
+| Table V Phase 3 ablation shifts              | `phase3_audit_pad.py --action both --num-runs 10 --ablate ...`    |
+| Table S1 Δρ metrics (suppl.)                 | `xfpad/metrics/geometric.py` invoked via Phase 2    |
+| Tables S2 / S3 / S4 (suppl.)                 | full-std and *Without RPro10* variants of the runs above |
 
 ---
 
@@ -257,10 +278,12 @@ See `scripts/phase2_map_unseen.py:_project` for a worked example of running both
 
 ```bibtex
 @article{carta2025xfpad,
-  title   = {The Fingerprint {PAD} Exposimeter ({X-FPAD}):
-             A Visual Framework for Evaluating Generalization to Unseen Attacks},
   author  = {Carta, Simone and Casula, Roberto and Marcialis, Gian Luca},
+  title   = {The Fingerprint {PAD} Exposimeter ({X-FPAD}): A Visual Framework
+             for Evaluating Generalization to Unseen Attacks},
+  journal = {IEEE Transactions on Biometrics, Behavior, and Identity Science},
   year    = {2025},
+  note    = {Under review},
 }
 ```
 
