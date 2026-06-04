@@ -277,12 +277,12 @@ See `scripts/phase2_map_unseen.py:_project` for a worked example of running both
 ## Citation
 
 ```bibtex
-@article{carta2025xfpad,
+@article{carta2026xfpad,
   author  = {Carta, Simone and Casula, Roberto and Marcialis, Gian Luca},
   title   = {The Fingerprint {PAD} Exposimeter ({X-FPAD}): A Visual Framework
              for Evaluating Generalization to Unseen Attacks},
   journal = {IEEE Transactions on Biometrics, Behavior, and Identity Science},
-  year    = {2025},
+  year    = {2026},
   note    = {Under review},
 }
 ```
