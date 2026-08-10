@@ -28,9 +28,16 @@ CTX = REPO / "outputs" / "context_stability.json"
 # training one other than ours, X-FPAD last
 ROWS = [
     ("raw", r"1280-D embedding, nearest centroid", "post-hoc"),
-    ("pca", r"PCA $\rightarrow$ 2-D", "post-hoc"),
-    ("tsne", r"t-SNE $\rightarrow$ 2-D", "post-hoc"),
-    ("umap", r"UMAP $\rightarrow$ 2-D", "post-hoc"),
+    # each reduction twice: fitted jointly on the training and unseen samples,
+    # and fitted on the training set alone and asked to place the unseen ones
+    # afterwards. Printing the pair is what keeps the comparison from resting on
+    # a protocol the alternatives never chose.
+    ("pca", r"PCA $\rightarrow$ 2-D, joint fit", "post-hoc"),
+    ("pca_train", r"PCA $\rightarrow$ 2-D, fitted on the training set", "post-hoc"),
+    ("tsne", r"t-SNE $\rightarrow$ 2-D, joint fit", "post-hoc"),
+    ("tsne_train", r"t-SNE $\rightarrow$ 2-D, fitted on the training set", "post-hoc"),
+    ("umap", r"UMAP $\rightarrow$ 2-D, joint fit", "post-hoc"),
+    ("umap_train", r"UMAP $\rightarrow$ 2-D, fitted on the training set", "post-hoc"),
     ("xfpad_radialonly", r"radial loss only, no angular term", "trained"),
     ("xfpad_cosface", r"free prototypes, CosFace margin", "trained"),
     ("xfpad_arcface", r"free prototypes, ArcFace margin", "trained"),
@@ -96,10 +103,20 @@ def selftest() -> None:
     # radial-only names no anchor at all and its attribution is flat
     ro = d["xfpad_radialonly"]
     assert ro["directional_n"] == 0 and round(ro["entropy"], 2) == 1.00, ro
-    # UMAP is the only one that gets a sign wrong among those naming anchors
-    assert d["umap"]["directional_hits"] < d["umap"]["directional_n"], d["umap"]
-    for key in ("raw", "pca", "tsne", "xfpad_cosface", "xfpad_arcface"):
+    # three readings name an anchor that then moves against them, and the
+    # 1280-D source is not one of them
+    wrong = [k for k, _l, _g in ROWS
+             if d[k]["directional_hits"] < d[k]["directional_n"]]
+    assert wrong == ["pca_train", "umap", "umap_train"], wrong
+    for key in ("raw", "pca", "tsne", "tsne_train", "xfpad_cosface",
+                "xfpad_arcface"):
         assert d[key]["directional_hits"] == d[key]["directional_n"], key
+    # neither protocol lifts a projection to the manifold, and neither is
+    # systematically the kinder of the two: the joint fit helps PCA and t-SNE
+    # and holds UMAP back. The text says exactly this and nothing more.
+    assert d["pca"]["spearman"] > d["pca_train"]["spearman"], d["pca"]
+    assert d["tsne"]["spearman"] > d["tsne_train"]["spearman"], d["tsne"]
+    assert d["umap"]["spearman"] < d["umap_train"]["spearman"], d["umap"]
     # \textbf does not embolden mathematics, and the rho cell is in math mode
     assert r"\textbf{$" not in body(), "bold applied outside mathematics"
     assert r"$\mathbf{+0.523}$" in body(), "the X-FPAD row is not bold"
@@ -110,8 +127,14 @@ def selftest() -> None:
     c = context()
     assert all(len(row.split("&")) == 7 for row in body().splitlines()
                if "multicolumn" not in row and "&" in row), "column count"
-    for key in ("xfpad", "xfpad_cosface", "xfpad_arcface", "raw", "pca_train"):
+    # the batch column separates the protocols, not the methods: everything
+    # that places a new point through a map it has already settled holds, and
+    # only the joint fit moves
+    for key in ("xfpad", "xfpad_cosface", "xfpad_arcface", "raw",
+                "pca_train", "tsne_train", "umap_train"):
         assert c[key]["changed"] == 0, key
+    for key in ("pca", "tsne", "umap"):
+        assert c[key]["changed"] > 0, key
     assert c["umap"]["changed"] > c["tsne"]["changed"] > 0, c
     assert c["xfpad_arcface"]["median_margin"] > c["xfpad"]["median_margin"], \
         "ArcFace is the more decisive of the two; the text must not claim otherwise"

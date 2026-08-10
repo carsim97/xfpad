@@ -43,8 +43,11 @@ from scripts.correlate_attr_apcer import (  # noqa: E402
 from scripts._protocol import NOISE_FLOOR, P_THRESHOLD  # noqa: E402
 
 # Representations read from the stored baselines JSONs (single seed) and those
-# recomputed here from multi-seed g_psi checkpoints.
-STORED = ["raw", "pca", "tsne", "umap"]
+# recomputed here from multi-seed g_psi checkpoints. The '*_train' entries are
+# the same three reductions fitted on the training set alone and asked to place
+# the unseen samples afterwards, so that the comparison does not rest on the
+# joint-fit protocol being the only one they admit.
+STORED = ["raw", "pca", "pca_train", "tsne", "tsne_train", "umap", "umap_train"]
 GEO_VARIANTS = {
     "xfpad":            "geometric_{scanner}_[0-9].pth",
     "xfpad_radialonly": "geometric_{scanner}_radialonly_[0-9].pth",
@@ -162,7 +165,8 @@ def main() -> None:
           f"| {'inside floor':>13} {'median':>8}")
     print("-" * 92)
     results = {}
-    for name in ["raw", "pca", "tsne", "umap", "xfpad_radialonly", "xfpad_cosface",
+    for name in ["raw", "pca", "pca_train", "tsne", "tsne_train", "umap",
+                 "umap_train", "xfpad_radialonly", "xfpad_cosface",
                  "xfpad_arcface", "xfpad"]:
         if name not in reps:
             continue

@@ -11,6 +11,12 @@ feature-space diagnostics computed on the SAME cached backbone embeddings:
   * xfpad : projection through the trained geometric encoder g_psi (the paper's
             manifold).
 
+The three reductions are fitted jointly on the training and unseen samples, one
+protocol for all of them. Each also has a train-fitted reading -- `pca_train`,
+`tsne_train`, `umap_train` -- where the map is learned on the training set alone
+and the unseen samples are placed afterwards through it. The pair says which
+findings belong to the method and which to the protocol.
+
 All representations feed the identical `analyze_unseen_pais` estimator
 (temperature-scaled cosine softmax over empirical centroid directions), so the
 comparison isolates the effect of the *representation* on the attribution.
@@ -89,6 +95,30 @@ def _reduce(name: str,
             from umap import UMAP
             out = UMAP(n_components=2, random_state=seed).fit_transform(joint)
         return out[:split], out[split:]
+
+    # The joint fit above places the unseen samples by refitting the map on all
+    # of them at once. It is not the only protocol available: all three of these
+    # reductions can be fitted on the training set alone and then asked to place
+    # a new point, PCA in closed form, UMAP through `transform`, t-SNE through
+    # the out-of-sample extension of openTSNE. That second reading is what these
+    # names produce, and the difference between the two is a property of the
+    # protocol rather than of the method.
+    if name in {"pca_train", "tsne_train", "umap_train"}:
+        if name == "pca_train":
+            from sklearn.decomposition import PCA
+            model = PCA(n_components=2, random_state=seed).fit(feats_train)
+            return model.transform(feats_train), model.transform(feats_test)
+        if name == "umap_train":
+            from umap import UMAP
+            model = UMAP(n_components=2, random_state=seed).fit(feats_train)
+            # embedding_ is the training layout the model settled on; asking
+            # transform() to re-place the training points would answer a
+            # different question and only approximate this one
+            return model.embedding_, model.transform(feats_test)
+        from openTSNE import TSNE as OpenTSNE
+        emb = OpenTSNE(n_components=2, random_state=seed,
+                       initialization="pca", perplexity=30).fit(feats_train)
+        return np.asarray(emb), np.asarray(emb.transform(feats_test))
 
     if name == "xfpad":
         import torch
@@ -195,6 +225,10 @@ def main() -> None:
                              "'xfpad' representation. Defaults to "
                              "checkpoints/geometric_<scanner>_<seed>.pth.")
     parser.add_argument("--save-json", default=None)
+    parser.add_argument("--add", action="store_true",
+                        help="merge into an existing --save-json instead of "
+                             "replacing it, so one representation can be added "
+                             "without refitting the others.")
     args = parser.parse_args()
 
     train_cfg = load_with_overrides(args)
@@ -249,6 +283,10 @@ def main() -> None:
                   for pai, r in res.items()}
             for rep, res in all_results.items()
         }
+        if args.add and out.exists():
+            merged = json.loads(out.read_text(encoding="utf-8"))
+            merged.update(serial)
+            serial = merged
         with out.open("w") as f:
             json.dump(serial, f, indent=2)
         LOG.info("saved -> %s", out)

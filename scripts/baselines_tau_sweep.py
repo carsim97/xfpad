@@ -47,7 +47,10 @@ from xfpad.metrics import analyze_unseen_pais  # noqa: E402
 from xfpad.utils import features_path, geometric_ckpt, read_split, split_path  # noqa: E402
 
 SCANNERS = ("greenbit", "dermalog")
-POSTHOC = ("raw", "pca", "tsne", "umap")
+# both protocols of each projection: a temperature that suits the joint fit
+# need not suit the train-fitted reading, and the claim the sweep supports has
+# to hold for either
+POSTHOC = ("raw", "pca", "pca_train", "tsne", "tsne_train", "umap", "umap_train")
 # wide enough on the right for the near-orthogonal 1280-D case, where a sharper
 # softmax is what the representation needs to name anchors at all
 TAUS = (0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 20.0, 30.0, 50.0)

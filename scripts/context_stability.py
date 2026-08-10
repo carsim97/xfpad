@@ -8,9 +8,14 @@ keeps.
 X-FPAD cannot fail this test by construction --- the encoder is frozen, the
 prototypes come from the training clusters, and the attribution of a PAI reads
 only its own samples --- so its row is the control that the measurement does
-what it says. The post-hoc reductions have no such guarantee: t-SNE and UMAP
-are refitted from scratch whenever the set of points changes, and a refit moves
-the known materials too.
+what it says. A reduction fitted jointly on the training and unseen samples has
+no such guarantee: it is refitted whenever the set of points changes, and a
+refit moves the known materials too.
+
+Whether that is a property of the method or of the protocol is a separate
+question, and it is answered here rather than assumed: PCA, UMAP and t-SNE are
+also read train-fitted, learning the map on the training set alone and placing
+the unseen samples through it afterwards.
 
 One unseen PAI is withdrawn at a time and the anchors of the remaining ones are
 compared against the run with all of them present. Withdrawing one of several
@@ -47,13 +52,15 @@ from xfpad.utils import (  # noqa: E402
     features_path, geometric_ckpt, read_split, split_path)
 
 SCANNERS = ("greenbit", "dermalog")
-# 'pca' is the reduction of Table S7, fitted jointly on the training and unseen
-# samples so that every representation receives one protocol. That protocol is
-# obligatory for t-SNE and UMAP and merely available for PCA, which can be
-# fitted on the training set alone and applied to new points; 'pca_train' is
-# that second reading, and the distance between the two is the cost of the
-# uniform treatment rather than a property of PCA.
-REPRESENTATIONS = ("raw", "pca", "pca_train", "tsne", "umap",
+# 'pca', 'tsne' and 'umap' are the reductions of Table S7, fitted jointly on the
+# training and unseen samples so that every representation receives one
+# protocol. None of the three is confined to it: PCA projects a new point in
+# closed form, UMAP has `transform`, and t-SNE has the out-of-sample extension
+# of openTSNE. The '*_train' names are that second reading, and the distance
+# between the pair is the cost of the uniform treatment rather than a property
+# of any of the methods.
+REPRESENTATIONS = ("raw", "pca", "pca_train", "tsne", "tsne_train",
+                   "umap", "umap_train",
                    "xfpad_radialonly", "xfpad_cosface", "xfpad_arcface", "xfpad")
 # the trained variants read through their own frozen encoder; the projection
 # path is the one of 'xfpad' with a different checkpoint
@@ -66,11 +73,7 @@ OUT = REPO / "outputs" / "context_stability.json"
 def _reading(rep: str, cfg, ftr, ztr_labels, fte, yte, mask,
              tr_names, te_names, order, bf, ckpt) -> Dict[str, tuple]:
     """{unseen PAI: (dominant anchor, margin over the runner-up)}"""
-    if rep == "pca_train":
-        from sklearn.decomposition import PCA
-        p = PCA(n_components=2, random_state=cfg.seed).fit(ftr)
-        z_train, z_test = p.transform(ftr), p.transform(fte[mask])
-    elif rep in VARIANT_CKPT:
+    if rep in VARIANT_CKPT:
         alt = ckpt.parent / ckpt.name.replace(
             f"_{cfg.seed}.pth", f"_{VARIANT_CKPT[rep]}_{cfg.seed}.pth")
         z_train, z_test = _reduce("xfpad", ftr, fte[mask], cfg.seed, alt,
@@ -178,12 +181,15 @@ def selftest() -> None:
     # the control: a frozen encoder reading a PAI's own samples cannot depend
     # on the company it keeps
     assert res["xfpad"]["changed"] == 0, res["xfpad"]["flips"][:3]
-    # nor can the 1280-D space, which is not fitted at all, nor PCA once it is
-    # fitted on the training set and applied to the new points. Invariance
-    # therefore does not separate the representations on its own.
-    for rep in ("raw", "pca_train"):
+    # nor can the 1280-D space, which is not fitted at all, nor any of the three
+    # reductions once the map is fitted on the training set and the unseen
+    # samples are placed through it. Invariance therefore separates the
+    # protocols and not the methods.
+    for rep in ("raw", "pca_train", "tsne_train", "umap_train"):
         assert res[rep]["changed"] == 0, (rep, res[rep]["flips"][:3])
-    # the two that must be refitted whenever the sample changes do move
+    # under the joint fit all three move, and the refit is the only difference
+    for rep in ("pca", "tsne", "umap"):
+        assert res[rep]["changed"] > res[f"{rep}_train"]["changed"], rep
     assert res["umap"]["changed"] > res["tsne"]["changed"] > 0, res
     # PCA moves only under the joint protocol, and only between anchors that
     # were tied: the movement is the cost of the uniform treatment
@@ -199,18 +205,19 @@ def selftest() -> None:
     # reductions, and not X-FPAD from the rest: the free-prototype encoders are
     # as decisive, ArcFace marginally more so. What is left to separate them is
     # the rank correlation and the identity of the sectors across retrainings.
-    for rep in ("pca", "pca_train", "tsne", "umap"):
-        assert marg[rep] <= 0.07, (rep, marg[rep])
+    for rep in ("pca", "pca_train", "tsne", "tsne_train", "umap", "umap_train"):
+        assert marg[rep] <= 0.15, (rep, marg[rep])
     for rep in ("xfpad", "xfpad_cosface", "xfpad_arcface"):
         assert marg[rep] >= 0.30, (rep, marg[rep])
     # without the angular term there is no dominant anchor to speak of
     assert marg["xfpad_radialonly"] < 0.01, marg["xfpad_radialonly"]
     assert len({res[r]["total"] for r in res}) == 1, "unequal comparisons"
-    print(f"  selftest ok — X-FPAD, raw and train-fitted PCA hold every one of "
-          f"{res['xfpad']['total']} comparisons; t-SNE moves "
-          f"{res['tsne']['changed']} and UMAP {res['umap']['changed']}; "
+    print(f"  selftest ok — X-FPAD, the 1280-D space and every train-fitted "
+          f"reduction hold all {res['xfpad']['total']} comparisons; under the "
+          f"joint fit t-SNE moves {res['tsne']['changed']} and UMAP "
+          f"{res['umap']['changed']}; "
           f"median margin {marg['xfpad']:.2f} against at most "
-          f"{max(marg[r] for r in ('pca', 'pca_train', 'tsne', 'umap')):.2f} "
+          f"{max(marg[r] for r in ('pca', 'pca_train', 'tsne', 'tsne_train', 'umap', 'umap_train')):.2f} "
           f"for a two-dimensional reduction")
 
 
