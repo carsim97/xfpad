@@ -7,3 +7,5 @@ matplotlib>=3.5
 tqdm>=4.60
 PyYAML>=5.4
 scikit-learn>=1.0
+umap-learn>=0.5
+openTSNE>=1.0
