@@ -117,7 +117,9 @@ python scripts/phase4_ranking.py
 
 ### Diagnostic baselines
 
-The same reading is applied to other representations of the same frozen embedding — the 1280-D space itself, PCA, t-SNE, UMAP, an encoder trained without the angular term, and free prototypes under CosFace and ArcFace margins:
+The same reading is applied to other representations of the same frozen embedding — the 1280-D space itself, PCA, t-SNE, UMAP, an encoder trained without the angular term, and free prototypes under CosFace and ArcFace margins.
+
+Each of the three projections is read under both protocols it admits: fitted jointly on the training and unseen samples, and fitted on the training set alone and asked to place the unseen samples afterwards, which PCA does in closed form, UMAP through `transform` and t-SNE through the out-of-sample extension of openTSNE. The `*_train` reductions are that second reading.
 
 ```bash
 python scripts/train_encoder_radial_only.py -c configs/greenbit.yaml --num-runs 10
@@ -126,6 +128,9 @@ python scripts/train_encoder_arcface.py     -c configs/greenbit.yaml --num-runs 
 
 python scripts/baselines_attribution.py    -c configs/greenbit.yaml \
        --save-json outputs/baselines_greenbit.json
+python scripts/baselines_attribution.py    -c configs/greenbit.yaml \
+       --reductions pca_train tsne_train umap_train \
+       --add --save-json outputs/baselines_greenbit.json
 python scripts/baselines_predictiveness.py --save-json outputs/point_a_predictiveness.json
 python scripts/cosface_layout_stability.py
 ```
