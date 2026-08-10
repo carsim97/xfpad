@@ -22,6 +22,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SRC = REPO / "outputs" / "point_a_predictiveness.json"
+CTX = REPO / "outputs" / "context_stability.json"
 
 # reading order: what you get without training a geometry, then what you get by
 # training one other than ours, X-FPAD last
@@ -42,8 +43,13 @@ def data() -> dict:
     return json.loads(SRC.read_text(encoding="utf-8"))
 
 
+def context() -> dict:
+    assert CTX.exists(), f"{CTX} missing; run context_stability.py"
+    return json.loads(CTX.read_text(encoding="utf-8"))
+
+
 def body() -> str:
-    d = data()
+    d, ctx = data(), context()
     out, group = [], None
     for key, label, grp in ROWS:
         r = d[key]
@@ -51,19 +57,24 @@ def body() -> str:
             head = ("Reductions of the frozen embedding"
                     if grp == "post-hoc" else "Geometric encoders trained on it")
             out.append(r"\addlinespace[2pt]" if group else "")
-            out.append(rf"\multicolumn{{5}}{{l}}{{\cellcolor{{gray!10}}\textit{{{head}}}}} \\")
+            out.append(rf"\multicolumn{{7}}{{l}}{{\cellcolor{{gray!10}}\textit{{{head}}}}} \\")
             group = grp
+        c = ctx[key]
         n, hits = r["directional_n"], r["directional_hits"]
         ent = f"{r['entropy']:.2f}"
         rho = f"{r['spearman']:+.3f}"
         sign = f"{hits} of {n}" if n else "--"
         sel = f"{100 * r['marginal_inside_floor']:.1f}\\%"
+        marg = f"{c['median_margin']:.2f}"
+        batch = f"{c['changed']} of {c['total']}"
         if key == "xfpad":
             # \textbf does not embolden mathematics: inside $...$ it takes
             # \mathbf, and the rho cell is math because of the sign
-            ent, sign, sel = (rf"\textbf{{{c}}}" for c in (ent, sign, sel))
+            ent, sign, sel, marg, batch = (
+                rf"\textbf{{{x}}}" for x in (ent, sign, sel, marg, batch))
             rho = rf"\mathbf{{{rho}}}"
-        out.append(f"{label} & {ent} & ${rho}$ & {sign} & {sel}" + r" \\")
+        out.append(f"{label} & {ent} & ${rho}$ & {sign} & {sel} & {marg} "
+                   f"& {batch}" + r" \\")
     return "\n".join(x for x in out if x)
 
 
@@ -92,6 +103,18 @@ def selftest() -> None:
     # \textbf does not embolden mathematics, and the rho cell is in math mode
     assert r"\textbf{$" not in body(), "bold applied outside mathematics"
     assert r"$\mathbf{+0.523}$" in body(), "the X-FPAD row is not bold"
+    # the two columns added to the table: a reading nobody can move, and one
+    # decisive enough to be worth moving. Neither separates X-FPAD on its own
+    # --- the free-prototype encoders match both --- so the table has to carry
+    # them next to rho rather than instead of it.
+    c = context()
+    assert all(len(row.split("&")) == 7 for row in body().splitlines()
+               if "multicolumn" not in row and "&" in row), "column count"
+    for key in ("xfpad", "xfpad_cosface", "xfpad_arcface", "raw", "pca_train"):
+        assert c[key]["changed"] == 0, key
+    assert c["umap"]["changed"] > c["tsne"]["changed"] > 0, c
+    assert c["xfpad_arcface"]["median_margin"] > c["xfpad"]["median_margin"], \
+        "ArcFace is the more decisive of the two; the text must not claim otherwise"
     print(f"  selftest ok — {len(ROWS)} representations; X-FPAD "
           f"rho {x['spearman']:+.3f}, {x['directional_hits']}/{x['directional_n']} "
           f"units, {100 * x['marginal_inside_floor']:.1f}% of controls inside")
