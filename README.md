@@ -179,6 +179,8 @@ python scripts/emit_phase4_table.py --selftest
 | the permutations it reads | `scripts/permutation_stability.py`, `scripts/optimize_ordering.py` | — |
 | Table S6 Phase 3b per unseen PAI | `scripts/emit_supp_phase3b.py` | `--selftest` |
 | Table S7 alternative representations | `scripts/emit_supp_representations.py` | `--selftest` |
+| each representation at its own best temperature (Sec. S7) | `scripts/baselines_tau_sweep.py` | `--selftest` |
+| dependence of the anchor on the batch (Sec. S7) | `scripts/context_stability.py` | `--selftest` |
 | Table S8 cross-sensor attribution | `scripts/emit_supp_crosssensor.py` | `--selftest` |
 | ρ over the 58 analysis units (Sec. V-C) | `scripts/correlate_attr_apcer.py` | — |
 | ρ over the 26 candidate–PAI pairs (Sec. V-D) | `scripts/phase4_ranking.py` | `--selftest` |
