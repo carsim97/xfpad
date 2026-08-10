@@ -1,0 +1,53 @@
+# Green Bit — same configuration as greenbit.yaml with every DataLoader run at
+# num_workers: 0, i.e. without worker subprocesses. The scanner name is
+# unchanged, so checkpoints and outputs land in the same place and results are
+# bit-identical; only the data-loading path differs.
+
+scanner: greenbit
+
+backbone:
+  num_workers: 0
+geometric:
+  num_workers: 0
+pad_detector:
+  num_workers: 0
+
+training_labels:
+  mapping:
+    - { match: ["Live"],     label: 0 }
+    - { match: ["LIVE"],     label: 0 }
+    - { match: ["Latex"],    label: 1 }
+    - { match: ["Fast"],     label: 2 }
+    - { match: ["LATEX"],    label: 3 }
+    - { match: ["RPRO10"],   label: 4 }
+    - { match: ["Ecoflex"],  label: 5 }
+    - { match: ["Body"],     label: 6 }
+    - { match: ["Wood"],     label: 7 }
+  names:
+    0: "Bona Fide"
+    1: "Latex"
+    2: "RProFast"
+    3: "Latex V2"
+    4: "RPro10"
+    5: "Ecoflex"
+    6: "Body Double"
+    7: "Wood Glue"
+
+unseen_labels:
+  mapping:
+    - { match: ["Live"],                  label: 0 }
+    - { match: ["LIVE"],                  label: 0 }
+    - { match: ["VBN",  "Consensual"],    label: 1 }
+    - { match: ["Body", "Consensual"],    label: 2 }
+    - { match: ["Wood", "Consensual"],    label: 3 }
+    - { match: ["VBN",  "ScreenSpoof"],   label: 4 }
+    - { match: ["Body", "ScreenSpoof"],   label: 5 }
+    - { match: ["Wood", "ScreenSpoof"],   label: 6 }
+  names:
+    0: "Bona Fide"
+    1: "Mix1 Consensual"
+    2: "Body Double Consensual"
+    3: "Elmer's Glue Consensual"
+    4: "Mix1 ScreenSpoof"
+    5: "Body Double ScreenSpoof"
+    6: "Elmer's Glue ScreenSpoof"
